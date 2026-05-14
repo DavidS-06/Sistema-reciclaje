@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import com.almacen.ConexionPostgreSQL;
 import java.sql.*;
-import java.time.LocalDate;
 
 public class VentanaRegistro extends JFrame {
 
