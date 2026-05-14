@@ -109,55 +109,10 @@ public class VentanaRetiro extends JFrame {
             try {
                 long idPublicacion = Long.parseLong(txtIdPublicacion.getText().trim());
                 float cantidadMaterialRetirado = Float.parseFloat(txtCantidad.getText().trim());
-
-                Connection conn = null;
-                PreparedStatement stmtProcesos = null;
-                ResultSet validarEstado = null;
-
-                try {
-                    conn = ConexionPostgreSQL.getConexion();
-                    String sqlValidarEstado = "select cantidad from publicaciones where id_publicacion = ?";
-                    stmtProcesos = conn.prepareStatement(sqlValidarEstado);
-                    stmtProcesos.setLong(1, idPublicacion);
-                    validarEstado = stmtProcesos.executeQuery();
-                    if (validarEstado.next()) {
-                        if (validarEstado.getFloat("cantidad") == 0) {
-                            JOptionPane.showMessageDialog(null, "El material no se encuentra disponible.", "Error", JOptionPane.INFORMATION_MESSAGE);
-                            conn.close();
-                            return;
-                        }
-                        float cantidadAnterior = validarEstado.getFloat("cantidad");
-                        float cantidadNueva = cantidadAnterior - cantidadMaterialRetirado;
-                        if (cantidadNueva < 0) {
-                            JOptionPane.showMessageDialog(null, "La cantidad de material retirado es superior a la cantidad disponible.", "Error", JOptionPane.INFORMATION_MESSAGE);
-                            conn.close();
-                            return;
-                        }
-                        String sqlActualizarDatos = "update publicaciones set cantidad = ? where id_publicacion = ?";
-                        stmtProcesos = conn.prepareStatement(sqlActualizarDatos);
-                        stmtProcesos.setFloat(1, cantidadNueva);
-                        stmtProcesos.setLong(2, idPublicacion);
-                        int filasActualizadas = stmtProcesos.executeUpdate();
-                        if (filasActualizadas > 0) {
-                                JOptionPane.showMessageDialog(null, "Retiro registrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                                
-                                // 🧹 Limpiar campos
-                                txtIdPublicacion.setText("");
-                                txtCantidad.setText("");
-                            }
-                        if(cantidadNueva == 0){
-                            sqlActualizarDatos = "update publicaciones set estado = 'Agotado' where id_publicacion = ?";
-                            stmtProcesos = conn.prepareStatement(sqlActualizarDatos);
-                            stmtProcesos.setLong(1, idPublicacion);
-                            stmtProcesos.execute();
-                        }
-                        conn.close();
-                    } else {
-                        JOptionPane.showMessageDialog(null, "No hay ninguna publicación con dicho ID.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (SQLException ex) {
-                    JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                retirarMaterial(idPublicacion, cantidadMaterialRetirado);
+                //Limpiar campos
+                txtIdPublicacion.setText("");
+                txtCantidad.setText("");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Debe ingresar datos validos.", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -186,34 +141,8 @@ public class VentanaRetiro extends JFrame {
             modeloTabla.addColumn("Unidad");
             modeloTabla.addColumn("Descripcion");
             modeloTabla.addColumn("Estado");
+            modeloTabla = consultarMateriales(modeloTabla);
 
-            Connection conn = null;
-            PreparedStatement stmtPublis = null;
-            ResultSet resultadosPublis = null;
-
-            try {
-                conn = ConexionPostgreSQL.getConexion();
-                String sql = "select id_publicacion, nombre, id_usuario, fecha, lugar, cantidad, unidad, descripcion, estado "
-                        + "from materiales join publicaciones on materiales.id = publicaciones.id_material";
-                stmtPublis = conn.prepareStatement(sql);
-                resultadosPublis = stmtPublis.executeQuery();
-                while (resultadosPublis.next()) {
-                    modeloTabla.addRow(new Object[]{
-                        resultadosPublis.getLong("id_publicacion"),
-                        resultadosPublis.getString("nombre"),
-                        resultadosPublis.getLong("id_usuario"),
-                        resultadosPublis.getDate("fecha"),
-                        resultadosPublis.getString("lugar"),
-                        resultadosPublis.getFloat("cantidad"),
-                        resultadosPublis.getString("unidad"),
-                        resultadosPublis.getString("descripcion"),
-                        resultadosPublis.getString("estado")
-                    });
-                }
-                conn.close();
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(null, ex.getMessage());
-            }
             JTable tablaPublicaciones = new JTable(modeloTabla);
             tablaPublicaciones.setEnabled(false);
             JScrollPane panelPublicaciones = new JScrollPane(tablaPublicaciones);
@@ -251,9 +180,86 @@ public class VentanaRetiro extends JFrame {
         ));
     }
 
-    private void estiloCombo(JComboBox<?> cb) {
-        cb.setFont(Fuentes.CUERPO);
-        cb.setBackground(Colores.BLANCO);
-        cb.setBorder(BorderFactory.createLineBorder(Colores.BORDE, 1, true));
+    private DefaultTableModel consultarMateriales(DefaultTableModel modeloTabla) {
+        //Conexion BD
+        Connection conn = null;
+        PreparedStatement stmtPublis = null;
+        ResultSet resultadosPublis = null;
+        DefaultTableModel modelo = modeloTabla;
+
+        try {
+            conn = ConexionPostgreSQL.getConexion();
+            String sql = "select id_publicacion, nombre, id_usuario, fecha, lugar, cantidad, unidad, descripcion, estado "
+                    + "from materiales join publicaciones on materiales.id = publicaciones.id_material";
+            stmtPublis = conn.prepareStatement(sql);
+            resultadosPublis = stmtPublis.executeQuery();
+            while (resultadosPublis.next()) {
+                modeloTabla.addRow(new Object[]{
+                    resultadosPublis.getLong("id_publicacion"),
+                    resultadosPublis.getString("nombre"),
+                    resultadosPublis.getLong("id_usuario"),
+                    resultadosPublis.getDate("fecha"),
+                    resultadosPublis.getString("lugar"),
+                    resultadosPublis.getFloat("cantidad"),
+                    resultadosPublis.getString("unidad"),
+                    resultadosPublis.getString("descripcion"),
+                    resultadosPublis.getString("estado")
+                });
+            }
+            conn.close();
+            return modelo;
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return null;
+        }
+    }
+
+    private void retirarMaterial(Long idPublicacion, float cantidadMaterialRetirado) {
+        //Conexion BD
+        Connection conn = null;
+        PreparedStatement stmtProcesos = null;
+        ResultSet validarEstado = null;
+
+        try {
+            conn = ConexionPostgreSQL.getConexion();
+            String sqlValidarEstado = "select cantidad from publicaciones where id_publicacion = ?";
+            stmtProcesos = conn.prepareStatement(sqlValidarEstado);
+            stmtProcesos.setLong(1, idPublicacion);
+            validarEstado = stmtProcesos.executeQuery();
+            if (validarEstado.next()) {
+                if (validarEstado.getFloat("cantidad") == 0) {
+                    JOptionPane.showMessageDialog(null, "El material no se encuentra disponible.", "Error", JOptionPane.INFORMATION_MESSAGE);
+                    conn.close();
+                    return;
+                }
+                float cantidadAnterior = validarEstado.getFloat("cantidad");
+                float cantidadNueva = cantidadAnterior - cantidadMaterialRetirado;
+                if (cantidadNueva < 0) {
+                    JOptionPane.showMessageDialog(null, "La cantidad de material retirado es superior a la cantidad disponible.", "Error", JOptionPane.INFORMATION_MESSAGE);
+                    conn.close();
+                    return;
+                }
+                String sqlActualizarDatos = "update publicaciones set cantidad = ? where id_publicacion = ?";
+                stmtProcesos = conn.prepareStatement(sqlActualizarDatos);
+                stmtProcesos.setFloat(1, cantidadNueva);
+                stmtProcesos.setLong(2, idPublicacion);
+                int filasActualizadas = stmtProcesos.executeUpdate();
+                if (filasActualizadas > 0) {
+                    JOptionPane.showMessageDialog(null, "Retiro registrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+                }
+                if (cantidadNueva == 0) {
+                    sqlActualizarDatos = "update publicaciones set estado = 'Agotado' where id_publicacion = ?";
+                    stmtProcesos = conn.prepareStatement(sqlActualizarDatos);
+                    stmtProcesos.setLong(1, idPublicacion);
+                    stmtProcesos.execute();
+                }
+                conn.close();
+            } else {
+                JOptionPane.showMessageDialog(null, "No hay ninguna publicación con dicho ID.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
