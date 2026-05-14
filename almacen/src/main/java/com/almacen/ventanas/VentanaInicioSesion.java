@@ -103,44 +103,10 @@ public class VentanaInicioSesion extends JFrame {
                     Long numControl = Long.parseLong(control);
                     String contrasena = HashMD5.generarMD5Hash(new String(txtContrasena.getPassword()));
 
-                    Long numControlObtenido = null;
-                    String contrasenaObtenida = null;
                     if (contrasena.isEmpty()) {
                         JOptionPane.showMessageDialog(null, "Debe llenar todos los campos.", "Error", JOptionPane.ERROR_MESSAGE);
                     } else {
-                        //Conexion a BD
-                        Connection conn = null;
-                        PreparedStatement stmtIniciarSesion = null;
-                        ResultSet cuentaObtenida = null;
-                        try {
-                            conn = ConexionPostgreSQL.getConexion();
-                            if (conn != null) {
-                                //Preparar sentencia
-                                String sql = "SELECT matricula, contrasenia FROM cuentas "
-                                        + "WHERE matricula = ? AND contrasenia = ?";
-
-                                stmtIniciarSesion = conn.prepareStatement(sql);
-
-                                stmtIniciarSesion.setLong(1, numControl);
-                                stmtIniciarSesion.setString(2, contrasena);
-
-                                cuentaObtenida = stmtIniciarSesion.executeQuery();
-                                while (cuentaObtenida.next()) {
-                                    numControlObtenido = cuentaObtenida.getLong("matricula");
-                                    contrasenaObtenida = cuentaObtenida.getString("contrasenia");
-                                }
-                                if (numControl.equals(numControlObtenido) && contrasena.equals(contrasenaObtenida)) {
-                                    new VentanaMenu(ventanaAnterior, numControl).setVisible(true);
-                                    this.dispose();
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "El usuario y/o la contraseña son incorrectos.", "Error", JOptionPane.ERROR_MESSAGE);
-                                }
-                            }
-                            conn.close();
-                        } catch (SQLException ex) {
-                            // Si hay error de base de datos
-                            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+                        iniciarSesion(numControl, contrasena);
                     }
                 }
             } catch (NumberFormatException ex) {
@@ -174,5 +140,44 @@ public class VentanaInicioSesion extends JFrame {
                 BorderFactory.createLineBorder(Colores.BORDE, 1, true),
                 BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
+    }
+
+    private void iniciarSesion(Long numControl, String contrasena) {
+        //Conexion a BD
+        Connection conn = null;
+        PreparedStatement stmtIniciarSesion = null;
+        ResultSet cuentaObtenida = null;
+        
+        Long numControlObtenido = null;
+        String contrasenaObtenida = null;
+        try {
+            conn = ConexionPostgreSQL.getConexion();
+            if (conn != null) {
+                //Preparar sentencia
+                String sql = "SELECT matricula, contrasenia FROM cuentas "
+                        + "WHERE matricula = ? AND contrasenia = ?";
+
+                stmtIniciarSesion = conn.prepareStatement(sql);
+
+                stmtIniciarSesion.setLong(1, numControl);
+                stmtIniciarSesion.setString(2, contrasena);
+
+                cuentaObtenida = stmtIniciarSesion.executeQuery();
+                while (cuentaObtenida.next()) {
+                    numControlObtenido = cuentaObtenida.getLong("matricula");
+                    contrasenaObtenida = cuentaObtenida.getString("contrasenia");
+                }
+                if (numControl.equals(numControlObtenido) && contrasena.equals(contrasenaObtenida)) {
+                    new VentanaMenu(ventanaAnterior, numControl).setVisible(true);
+                    this.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(null, "El usuario y/o la contraseña son incorrectos.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            conn.close();
+        } catch (SQLException ex) {
+            // Si hay error de base de datos
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
