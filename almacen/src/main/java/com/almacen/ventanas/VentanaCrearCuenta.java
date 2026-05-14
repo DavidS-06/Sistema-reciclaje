@@ -171,12 +171,12 @@ public class VentanaCrearCuenta extends JFrame {
         panelPrincipal.add(txtContrasena, gbc);
 
         //Botones
-        JButton btnGuardar = new JButton("Guardar");
-        estiloBotonPrincipal(btnGuardar);
+        JButton btnCrear = new JButton("Crear");
+        estiloBotonPrincipal(btnCrear);
         JButton btnCancelar = new JButton("Cancelar");
         estiloBotonSecundario(btnCancelar);
 
-        btnGuardar.addActionListener(e -> {
+        btnCrear.addActionListener(e -> {
             try {
                 // Obtener el texto de los campos y quitar espacios en blanco al inicio y final
                 long matricula = Long.parseLong(txtMatricula.getText().trim());
@@ -193,59 +193,14 @@ public class VentanaCrearCuenta extends JFrame {
                     JOptionPane.showMessageDialog(null, "Por favor, llena todos los campos correctamente.", "Aviso", JOptionPane.WARNING_MESSAGE);
 
                 } else {
-                    //Conexion a BD
-                    Connection conn = null;
-                    PreparedStatement stmtUsuario = null;
-                    PreparedStatement stmtCuenta = null;
-
-                    try {
-                        //Conectar
-                        conn = ConexionPostgreSQL.getConexion();
-
-                        if (conn != null) {
-                            //Preparar sentencia
-                            String sql = "INSERT INTO usuarios (matricula, nombre, apellido_paterno, apellido_materno, division, rol) "
-                                    + "VALUES (?, ?, ?, ?, ?, ?)";
-
-                            stmtUsuario = conn.prepareStatement(sql);
-
-                            stmtUsuario.setLong(1, matricula);
-                            stmtUsuario.setString(2, nombre);
-                            stmtUsuario.setString(3, apellidoP);
-                            stmtUsuario.setString(4, apellidoM);
-                            stmtUsuario.setString(5, division);
-                            stmtUsuario.setString(6, rol);
-
-                            String sql2 = "INSERT INTO cuentas (matricula, contrasenia) "
-                                    + "VALUES (?, ?)";
-
-                            stmtCuenta = conn.prepareStatement(sql2);
-
-                            stmtCuenta.setLong(1, matricula);
-                            stmtCuenta.setString(2, contrasena);
-
-                            // Ejecutar inserción
-                            int filasInsertadasUsuario = stmtUsuario.executeUpdate();
-                            int filasInsertadasCuenta = stmtCuenta.executeUpdate();
-
-                            if (filasInsertadasUsuario > 0 && filasInsertadasCuenta > 0) {
-                                JOptionPane.showMessageDialog(null, "Datos guardados correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-                                // 🧹 Limpiar campos
-                                txtMatricula.setText("");
-                                txtNombre.setText("");
-                                txtApellidoP.setText("");
-                                txtApellidoM.setText("");
-                                txtContrasena.setText("");
-                                cbDivision.setSelectedIndex(0); // Reiniciar combobox
-                                cbRol.setSelectedIndex(0);      // Reiniciar combobox
-                            }
-                            conn.close();
-                        }
-                    } catch (SQLException ex) {
-                        // Si hay error de base de datos
-                        JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    crearCuenta(matricula, nombre, apellidoP, apellidoM, division, rol, contrasena);
+                    txtMatricula.setText("");
+                    txtNombre.setText("");
+                    txtApellidoP.setText("");
+                    txtApellidoM.setText("");
+                    txtContrasena.setText("");
+                    cbDivision.setSelectedIndex(0); // Reiniciar combobox
+                    cbRol.setSelectedIndex(0);      // Reiniciar combobox
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Debe ingresar datos validos.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -260,7 +215,7 @@ public class VentanaCrearCuenta extends JFrame {
 
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 0));
         panelBotones.setOpaque(false);
-        panelBotones.add(btnGuardar);
+        panelBotones.add(btnCrear);
         panelBotones.add(btnCancelar);
 
         gbc.gridx = 0;
@@ -325,5 +280,54 @@ public class VentanaCrearCuenta extends JFrame {
         ));
         combo.setPreferredSize(new Dimension(120, 32));
         return combo;
+    }
+
+    private void crearCuenta(Long matricula, String nombre, String apellidoP, String apellidoM, String division, String rol, String contrasena) {
+        //Conexion a BD
+        Connection conn = null;
+        PreparedStatement stmtUsuario = null;
+        PreparedStatement stmtCuenta = null;
+
+        try {
+            //Conectar
+            conn = ConexionPostgreSQL.getConexion();
+
+            if (conn != null) {
+                //Preparar sentencia
+                String sql = "INSERT INTO usuarios (matricula, nombre, apellido_paterno, apellido_materno, division, rol) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)";
+
+                stmtUsuario = conn.prepareStatement(sql);
+
+                stmtUsuario.setLong(1, matricula);
+                stmtUsuario.setString(2, nombre);
+                stmtUsuario.setString(3, apellidoP);
+                stmtUsuario.setString(4, apellidoM);
+                stmtUsuario.setString(5, division);
+                stmtUsuario.setString(6, rol);
+
+                String sql2 = "INSERT INTO cuentas (matricula, contrasenia) "
+                        + "VALUES (?, ?)";
+
+                stmtCuenta = conn.prepareStatement(sql2);
+
+                stmtCuenta.setLong(1, matricula);
+                stmtCuenta.setString(2, contrasena);
+
+                // Ejecutar inserción
+                int filasInsertadasUsuario = stmtUsuario.executeUpdate();
+                int filasInsertadasCuenta = stmtCuenta.executeUpdate();
+
+                if (filasInsertadasUsuario > 0 && filasInsertadasCuenta > 0) {
+                    JOptionPane.showMessageDialog(null, "Datos guardados correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+                    // 🧹 Limpiar campos
+                }
+                conn.close();
+            }
+        } catch (SQLException ex) {
+            // Si hay error de base de datos
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
