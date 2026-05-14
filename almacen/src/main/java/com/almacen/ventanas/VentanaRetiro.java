@@ -190,7 +190,8 @@ public class VentanaRetiro extends JFrame {
         try {
             conn = ConexionPostgreSQL.getConexion();
             String sql = "select id_publicacion, nombre, id_usuario, fecha, lugar, cantidad, unidad, descripcion, estado "
-                    + "from materiales join publicaciones on materiales.id = publicaciones.id_material";
+                    + "from materiales join publicaciones on materiales.id = publicaciones.id_material"
+                    + "order by id_publicacion asc";
             stmtPublis = conn.prepareStatement(sql);
             resultadosPublis = stmtPublis.executeQuery();
             while (resultadosPublis.next()) {
