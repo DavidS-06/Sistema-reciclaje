@@ -10,7 +10,7 @@ public class VentanaRegistro extends JFrame {
 
     private final VentanaIndex ventanaAnterior;
     private long idUsuario;
-    
+
     private final int ANCHO_VENTANA = 500;
     private final int ALTO_VENTANA = 600;
     private final int ANCHO_CAMPO = 320;
@@ -129,13 +129,13 @@ public class VentanaRegistro extends JFrame {
         add(txtDescripcion, gbc);
 
         //Botón publicar
-        JButton btnEnviar = new JButton("PUBLICAR");
-        btnEnviar.setBackground(Colores.TURQUESA);
-        btnEnviar.setForeground(Colores.BLANCO);
-        btnEnviar.setFont(Fuentes.BOTON);
-        btnEnviar.setPreferredSize(TAM_BOTON);
-        btnEnviar.setFocusPainted(false);
-        btnEnviar.addActionListener(e -> {
+        JButton btnPublicar = new JButton("PUBLICAR");
+        btnPublicar.setBackground(Colores.TURQUESA);
+        btnPublicar.setForeground(Colores.BLANCO);
+        btnPublicar.setFont(Fuentes.BOTON);
+        btnPublicar.setPreferredSize(TAM_BOTON);
+        btnPublicar.setFocusPainted(false);
+        btnPublicar.addActionListener(e -> {
 
             try {
                 //Obtener los datos de los campos de texto
@@ -155,46 +155,13 @@ public class VentanaRegistro extends JFrame {
                 if (lugar.isEmpty() || descripcion.isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Por favor, llena todos los campos correctamente.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 } else {
-                    //Conexion a BD
-                    Connection conn = null;
-                    PreparedStatement stmtPublicar = null;
-
-                    try {
-                        //Conectar
-                        conn = ConexionPostgreSQL.getConexion();
-
-                        if (conn != null) {
-                            String sql = "INSERT INTO publicaciones (id_usuario, id_material, fecha, lugar, cantidad, unidad, descripcion, estado) "
-                                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                            stmtPublicar = conn.prepareStatement(sql);
-                            stmtPublicar.setLong(1, idUsuarioPublicacion);
-                            stmtPublicar.setInt(2, idMaterial);
-                            stmtPublicar.setDate(3, fecha);
-                            stmtPublicar.setString(4, lugar);
-                            stmtPublicar.setFloat(5, cantidad);
-                            stmtPublicar.setString(6, unidad);
-                            stmtPublicar.setString(7, descripcion);
-                            stmtPublicar.setString(8, estado);
-
-                            int filasInsertadas = stmtPublicar.executeUpdate();
-
-                            if (filasInsertadas > 0) {
-                                JOptionPane.showMessageDialog(null, "Publicacion realizada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-                                //Reiniciar campos
-                                cboTipoMaterial.setSelectedIndex(0);
-                                txtLugar.setText("");
-                                txtCantidad.setText("");
-                                cboUnidad.setSelectedIndex(0);
-                                txtDescripcion.setText("");
-                            }
-                        }
-                        conn.close();
-                    } catch (SQLException ex) {
-                        // Si hay error de base de datos
-                        JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-
+                    publicarMaterial(idUsuarioPublicacion, idMaterial, fecha, lugar, cantidad, unidad, descripcion, estado);
+                    //Reiniciar campos
+                    cboTipoMaterial.setSelectedIndex(0);
+                    txtLugar.setText("");
+                    txtCantidad.setText("");
+                    cboUnidad.setSelectedIndex(0);
+                    txtDescripcion.setText("");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Debe ingresar datos validos.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -203,7 +170,7 @@ public class VentanaRegistro extends JFrame {
         });
         gbc.insets = new Insets(15, 20, 8, 20);
         gbc.gridy = 12;
-        add(btnEnviar, gbc);
+        add(btnPublicar, gbc);
 
         //Regresar
         JButton btnRegresar = new JButton("REGRESAR AL MENÚ");
@@ -234,5 +201,40 @@ public class VentanaRegistro extends JFrame {
         cb.setFont(Fuentes.CUERPO);
         cb.setBackground(Colores.BLANCO);
         cb.setBorder(BorderFactory.createLineBorder(Colores.BORDE, 1, true));
+    }
+
+    private void publicarMaterial(Long idUsuarioPublicacion, int idMaterial, Date fecha, String lugar, float cantidad, String unidad, String descripcion, String estado) {
+        //Conexion a BD
+        Connection conn = null;
+        PreparedStatement stmtPublicar = null;
+
+        try {
+            //Conectar
+            conn = ConexionPostgreSQL.getConexion();
+
+            if (conn != null) {
+                String sql = "INSERT INTO publicaciones (id_usuario, id_material, fecha, lugar, cantidad, unidad, descripcion, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                stmtPublicar = conn.prepareStatement(sql);
+                stmtPublicar.setLong(1, idUsuarioPublicacion);
+                stmtPublicar.setInt(2, idMaterial);
+                stmtPublicar.setDate(3, fecha);
+                stmtPublicar.setString(4, lugar);
+                stmtPublicar.setFloat(5, cantidad);
+                stmtPublicar.setString(6, unidad);
+                stmtPublicar.setString(7, descripcion);
+                stmtPublicar.setString(8, estado);
+
+                int filasInsertadas = stmtPublicar.executeUpdate();
+
+                if (filasInsertadas > 0) {
+                    JOptionPane.showMessageDialog(null, "Publicacion realizada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+            conn.close();
+        } catch (SQLException ex) {
+            // Si hay error de base de datos
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
