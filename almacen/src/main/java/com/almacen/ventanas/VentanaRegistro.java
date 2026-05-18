@@ -109,7 +109,7 @@ public class VentanaRegistro extends JFrame {
 
         String[] unidades = new String[]{"Piezas", "Gramos"};
         JComboBox<String> cboUnidad = new JComboBox<>(unidades);
-        estiloCampo(cboUnidad);
+        estiloCombo(cboUnidad);
         cboUnidad.setPreferredSize(TAM_CAMPO);
         gbc.gridy = 9;
         add(cboUnidad, gbc);
